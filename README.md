@@ -1,19 +1,19 @@
 # 🐾 HomeVet - Servicios Veterinarios a Domicilio
 
-[![Build Timestamp](https://img.shields.io/badge/Build%20Timestamp-2026--10--21T21%3A05%3A00Z-0e697d?style=flat-square)](https://github.com)
+[![Build Timestamp](https://img.shields.io/badge/Build%20Timestamp-2026--10--22T00%3A05%3A00Z-0e697d?style=flat-square)](https://github.com)
 [![PWA Ready](https://img.shields.io/badge/PWA-Compatible%20M%C3%B3vil-25d366?style=flat-square&logo=pwa)](https://github.com)
 [![IndexedDB](https://img.shields.io/badge/Database-IndexedDB%20v1.0-0284c7?style=flat-square)](https://github.com)
-[![Version](https://img.shields.io/badge/Version-1.2.0-indigo?style=flat-square)](https://github.com)
+[![Version](https://img.shields.io/badge/Version-1.3.0-indigo?style=flat-square)](https://github.com)
 
 Aplicación web progresiva (**PWA**) y sistema integral para la gestión, reserva y administración de servicios médicos veterinarios a domicilio para caninos y felinos.
 
 ---
 
 ## 📌 Metadatos de Publicación y Release
-* **Versión de Release:** `v1.2.0`
-* **Timestamp de Compilación / Sincronización:** `2026-10-21T21:05:00Z`
+* **Versión de Release:** `v1.3.0`
+* **Timestamp de Compilación / Sincronización:** `2026-10-22T00:05:00Z`
 * **Estado de Integración:** Listo para GitHub y GitHub Pages
-* **Compatibilidad Móvil (PWA):** Android, iOS y Navegadores de Escritorio
+* **Compatibilidad Móvil (PWA):** Android, iOS y Navegadores de Escritorio (Optimizado 100% responsivo)
 
 ---
 
@@ -120,7 +120,7 @@ git status
 git add .
 
 # 3. Crear el commit de actualización
-git commit -m "feat(core): Optimizaciones PWA móvil, arquitectura PostgREST y suite de timestamps [2026-10-21T22:45:00Z]"
+git commit -m "fix(mobile): diseño 100% responsivo para celulares y PCs, botones grandes y caché PWA v1.3.0 [2026-10-22T00:05:00Z]"
 
 # 4. Asegurarse de estar en la rama main
 git branch -M main

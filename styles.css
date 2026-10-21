@@ -1302,93 +1302,8 @@ body {
   color: #64748b;
 }
 
-/* RESPONSIVE & MOBILE PWA TOUCH OPTIMIZATIONS */
-@media (max-width: 968px) {
-  .hero-container {
-    grid-template-columns: 1fr;
-    text-align: center;
-    gap: 2.5rem;
-  }
-  .hero-description {
-    margin-left: auto;
-    margin-right: auto;
-  }
-  .hero-buttons {
-    justify-content: center;
-  }
-  .hero-features {
-    grid-template-columns: 1fr;
-  }
-  .booking-container {
-    grid-template-columns: 1fr;
-  }
-  .footer-container {
-    grid-template-columns: 1fr;
-    gap: 2rem;
-  }
-}
-
-@media (max-width: 768px) {
-  .hero {
-    padding: 3rem 1.25rem 3.5rem;
-  }
-  .hero-title {
-    font-size: 2.15rem;
-  }
-  .hero-buttons {
-    flex-direction: column;
-    width: 100%;
-    gap: 0.85rem;
-  }
-  .hero-buttons .btn {
-    width: 100%;
-    min-height: 52px;
-    font-size: 1.05rem;
-  }
-  .pet-type-selector {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0.5rem;
-  }
-  .pet-radio-card {
-    padding: 1rem 0.4rem;
-    min-height: 85px;
-  }
-  .time-slots-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-  .location-input-group {
-    flex-direction: column;
-    gap: 0.65rem;
-  }
-  .location-input-group .btn-gps {
-    width: 100%;
-    min-height: 48px;
-    justify-content: center;
-  }
-  .nav-links {
-    display: none;
-  }
-  .pwa-install-banner {
-    bottom: 1rem;
-    width: calc(100% - 1.5rem);
-    padding: 1.1rem;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.85rem;
-  }
-  .pwa-install-banner > div:last-child {
-    display: flex;
-    gap: 0.5rem;
-  }
-  .pwa-install-banner .btn-primary {
-    flex: 1;
-    min-height: 50px;
-    font-size: 1rem;
-  }
-}
-
 /* ======================================================= */
-/* PWA MOBILE INSTALL BANNER                               */
+/* PWA MOBILE INSTALL BANNER BASE STYLES                   */
 /* ======================================================= */
 .pwa-install-banner {
   position: fixed;
@@ -1422,7 +1337,7 @@ body {
 }
 
 /* ======================================================= */
-/* BOTÓN FLOTANTE WHATSAPP PARA CELULARES                  */
+/* BOTÓN FLOTANTE WHATSAPP PARA CELULARES BASE             */
 /* ======================================================= */
 .mobile-whatsapp-fab {
   position: fixed;
@@ -1451,12 +1366,6 @@ body {
   width: 32px;
   height: 32px;
   fill: currentColor;
-}
-
-@media (max-width: 768px) {
-  .mobile-whatsapp-fab {
-    display: flex;
-  }
 }
 
 /* ======================================================= */
@@ -1512,5 +1421,328 @@ body {
   overflow-x: auto;
   max-height: 420px;
   border: 1px solid rgba(45, 212, 191, 0.3);
+}
+
+/* ======================================================= */
+/* RESPONSIVE DESIGN & MOBILE OPTIMIZATIONS                */
+/* ======================================================= */
+
+/* TABLETS Y PANTALLAS MEDIANAS (hasta 968px) */
+@media (max-width: 968px) {
+  .hero-container {
+    grid-template-columns: 1fr;
+    text-align: center;
+    gap: 2.5rem;
+  }
+  .hero-description {
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .hero-buttons {
+    justify-content: center;
+  }
+  .hero-features {
+    grid-template-columns: 1fr;
+  }
+  .booking-container {
+    grid-template-columns: 1fr;
+  }
+  .footer-container {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+}
+
+/* SMARTPHONES Y TELÉFONOS MÓVILES (hasta 768px) */
+@media (max-width: 768px) {
+  /* Ocultar enlaces de texto del menú para dejar espacio limpio en móvil */
+  .nav-links {
+    display: none !important;
+  }
+
+  .nav-container {
+    padding: 0.75rem 1rem !important;
+  }
+
+  .brand-text h1 {
+    font-size: 1.15rem !important;
+  }
+
+  .brand-text span {
+    font-size: 0.65rem !important;
+  }
+
+  /* Sección Hero 100% responsiva y apilada */
+  .hero {
+    padding: 2.5rem 1.15rem 3rem !important;
+  }
+
+  .hero-container {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1.75rem !important;
+    text-align: center !important;
+    width: 100% !important;
+  }
+
+  .hero-pill {
+    margin: 0 auto 1rem !important;
+    font-size: 0.76rem !important;
+    padding: 0.35rem 0.85rem !important;
+  }
+
+  .hero-title {
+    font-size: 1.85rem !important;
+    line-height: 1.2 !important;
+    margin-bottom: 1rem !important;
+  }
+
+  .hero-description {
+    font-size: 0.96rem !important;
+    line-height: 1.6 !important;
+    margin-bottom: 1.5rem !important;
+  }
+
+  /* Botones Hero grandes, táctiles y 100% ancho */
+  .hero-buttons {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 0.75rem !important;
+    margin-bottom: 2rem !important;
+  }
+
+  .hero-buttons .btn {
+    width: 100% !important;
+    min-height: 52px !important;
+    font-size: 1.05rem !important;
+    font-weight: 800 !important;
+    justify-content: center !important;
+  }
+
+  /* Cuadros de características en 1 sola columna amplia */
+  .hero-features {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important;
+    width: 100% !important;
+  }
+
+  .feature-box {
+    padding: 1rem !important;
+    text-align: left !important;
+  }
+
+  /* Fotografía clínica adaptada al ancho completo del celular */
+  .hero-visual-card {
+    width: 100% !important;
+    margin-top: 0.5rem !important;
+  }
+
+  .hero-visual-img {
+    height: 250px !important;
+    object-fit: cover !important;
+  }
+
+  .hero-badge-overlay {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.5rem !important;
+    padding: 0.85rem 1rem !important;
+    bottom: 0.75rem !important;
+    left: 0.75rem !important;
+    right: 0.75rem !important;
+  }
+
+  .hero-schedule-pill {
+    align-self: flex-start !important;
+    font-size: 0.72rem !important;
+  }
+
+  /* Secciones y títulos generales */
+  .section-wrapper {
+    padding: 3rem 1.15rem !important;
+    width: 100% !important;
+  }
+
+  .section-title {
+    font-size: 1.65rem !important;
+    line-height: 1.25 !important;
+  }
+
+  .section-subtitle {
+    font-size: 0.92rem !important;
+  }
+
+  .section-header {
+    margin-bottom: 2.25rem !important;
+  }
+
+  /* Catálogo de Servicios en 1 sola columna cómoda */
+  .services-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1.25rem !important;
+    width: 100% !important;
+  }
+
+  .service-card {
+    padding: 1.5rem 1.2rem !important;
+    width: 100% !important;
+  }
+
+  .service-pricing {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+  }
+
+  .service-pricing .btn {
+    min-height: 46px !important;
+    padding: 0.6rem 1.25rem !important;
+    font-size: 0.92rem !important;
+    font-weight: 700 !important;
+  }
+
+  /* Filtros de servicios */
+  .filter-pills, .services-filter-bar {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 0.45rem !important;
+    justify-content: center !important;
+  }
+
+  .filter-btn {
+    padding: 0.5rem 0.95rem !important;
+    font-size: 0.82rem !important;
+    min-height: 40px !important;
+  }
+
+  /* Formulario de Reserva 100% táctil y legible */
+  .booking-container {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1.5rem !important;
+    width: 100% !important;
+  }
+
+  .booking-form-card {
+    padding: 1.5rem 1.15rem !important;
+    width: 100% !important;
+  }
+
+  .booking-summary-card {
+    position: static !important;
+    width: 100% !important;
+    padding: 1.5rem 1.15rem !important;
+    margin-top: 1rem !important;
+  }
+
+  /* Selector de mascotas táctil grande */
+  .pet-type-selector {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 0.5rem !important;
+    width: 100% !important;
+  }
+
+  .pet-radio-card {
+    padding: 0.85rem 0.35rem !important;
+    min-height: 85px !important;
+  }
+
+  .pet-radio-card .pet-name {
+    font-size: 0.92rem !important;
+  }
+
+  /* Selector de horas en 3 columnas fáciles de pulsar con el pulgar */
+  .time-slots-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 0.5rem !important;
+    width: 100% !important;
+  }
+
+  .time-slot {
+    min-height: 48px !important;
+    font-size: 0.92rem !important;
+    font-weight: 700 !important;
+  }
+
+  /* Ubicación GPS apilada en móvil */
+  .location-input-group {
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 0.65rem !important;
+  }
+
+  .location-input-group .btn-gps {
+    width: 100% !important;
+    min-height: 48px !important;
+    justify-content: center !important;
+  }
+
+  /* Botón de envío de reserva prominente */
+  #booking-form .btn-primary {
+    width: 100% !important;
+    min-height: 54px !important;
+    font-size: 1.08rem !important;
+    font-weight: 800 !important;
+    justify-content: center !important;
+  }
+
+  /* Banner de instalación PWA en celular */
+  .pwa-install-banner {
+    bottom: 0.85rem !important;
+    width: calc(100% - 1.5rem) !important;
+    padding: 1rem !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.85rem !important;
+  }
+
+  .pwa-install-banner > div:last-child {
+    display: flex !important;
+    gap: 0.5rem !important;
+    width: 100% !important;
+  }
+
+  .pwa-install-banner .btn-primary {
+    flex: 1 !important;
+    min-height: 48px !important;
+    font-size: 0.95rem !important;
+    font-weight: 700 !important;
+    justify-content: center !important;
+  }
+
+  /* Botón flotante WhatsApp visible en celular */
+  .mobile-whatsapp-fab {
+    display: flex !important;
+    width: 58px !important;
+    height: 58px !important;
+  }
+
+  /* Ventajas clínicas en 1 columna */
+  .benefits-grid, [style*="minmax(280px, 1fr)"] {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+}
+
+/* TELÉFONOS MUY PEQUEÑOS (hasta 420px) */
+@media (max-width: 420px) {
+  .hero-title {
+    font-size: 1.65rem !important;
+  }
+  .pet-type-selector {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 0.35rem !important;
+  }
+  .pet-radio-card {
+    min-height: 78px !important;
+    padding: 0.65rem 0.2rem !important;
+  }
+  .time-slots-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 0.35rem !important;
+  }
 }
 

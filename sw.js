@@ -1,11 +1,11 @@
 // ====================================================================
 // HomeVet - Service Worker PWA (sw.js)
 // Soporte offline, caché de recursos estáticos y aceleración móvil
-// Timestamp de compilación: 2026-10-21T22:45:00Z
+// Timestamp de compilación: 2026-10-22T00:05:00Z
 // ====================================================================
 
-const BUILD_TIMESTAMP = '2026-10-21T22:45:00Z';
-const CACHE_NAME = `homevet-cache-v1.2.0-${BUILD_TIMESTAMP}`;
+const BUILD_TIMESTAMP = '2026-10-22T00:05:00Z';
+const CACHE_NAME = `homevet-cache-v1.3.0-${BUILD_TIMESTAMP}`;
 
 const ASSETS_TO_CACHE = [
   './',
