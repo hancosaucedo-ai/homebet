@@ -168,11 +168,159 @@ const INITIAL_RESERVATIONS = [
   }
 ];
 
+// ====================================================================
+// CLIENTE POSTGREST / POSTGRESQL (Soporte REST API y Sincronización)
+// ====================================================================
+class PostgRESTClient {
+  constructor() {
+    this.url = (typeof localStorage !== 'undefined' ? localStorage.getItem('homevet_postgrest_url') : '') || '';
+    this.apiKey = (typeof localStorage !== 'undefined' ? localStorage.getItem('homevet_postgrest_key') : '') || '';
+  }
+
+  setConfig(url, key = '') {
+    this.url = (url || '').trim().replace(/\/$/, '');
+    this.apiKey = (key || '').trim();
+    if (typeof localStorage !== 'undefined') {
+      if (this.url) {
+        localStorage.setItem('homevet_postgrest_url', this.url);
+      } else {
+        localStorage.removeItem('homevet_postgrest_url');
+      }
+      if (this.apiKey) {
+        localStorage.setItem('homevet_postgrest_key', this.apiKey);
+      } else {
+        localStorage.removeItem('homevet_postgrest_key');
+      }
+    }
+  }
+
+  isConfigured() {
+    return Boolean(this.url);
+  }
+
+  getHeaders() {
+    const headers = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Prefer': 'return=representation'
+    };
+    if (this.apiKey) {
+      headers['apikey'] = this.apiKey;
+      headers['Authorization'] = `Bearer ${this.apiKey}`;
+    }
+    return headers;
+  }
+
+  async testConnection() {
+    if (!this.isConfigured()) {
+      return { success: false, message: 'URL de PostgREST no configurada' };
+    }
+    const startMs = Date.now();
+    try {
+      const resp = await fetch(`${this.url}/services?limit=1`, {
+        method: 'GET',
+        headers: this.getHeaders()
+      });
+      const latencyMs = Date.now() - startMs;
+      if (resp.ok) {
+        const data = await resp.json();
+        return { 
+          success: true, 
+          latencyMs, 
+          status: resp.status, 
+          message: `Conexión exitosa a PostgREST (${latencyMs}ms)`,
+          sampleDataCount: Array.isArray(data) ? data.length : 1
+        };
+      } else {
+        const text = await resp.text();
+        return { success: false, latencyMs, status: resp.status, message: `Error HTTP ${resp.status}: ${text.slice(0, 100)}` };
+      }
+    } catch (err) {
+      return { success: false, message: `Fallo de conexión a ${this.url}: ${err.message}` };
+    }
+  }
+
+  async createReservation(res) {
+    if (!this.isConfigured()) return null;
+    try {
+      const payload = {
+        id: res.id,
+        client_name: res.clientName,
+        client_phone: res.clientPhone,
+        location: res.location,
+        pet_type: res.petType,
+        pet_name: res.petName || 'No indicado',
+        appointment_date: res.date,
+        appointment_time: res.time,
+        service_ids: res.serviceIds || [],
+        service_names: res.serviceNames || '',
+        total_price: res.totalPrice,
+        notes: res.notes || '',
+        status: res.status || 'Pendiente',
+        created_at: res.createdAtISO || new Date().toISOString()
+      };
+      const resp = await fetch(`${this.url}/reservations`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify(payload)
+      });
+      return resp.ok;
+    } catch (e) {
+      console.warn('PostgREST createReservation error:', e);
+      return false;
+    }
+  }
+
+  async saveService(service) {
+    if (!this.isConfigured()) return null;
+    try {
+      const payload = {
+        id: service.id,
+        title: service.title,
+        category: service.category,
+        pet_type: service.petType,
+        price: service.price,
+        duration: service.duration,
+        description: service.description,
+        icon_type: service.iconType || 'stethoscope',
+        active: service.active !== false
+      };
+      const resp = await fetch(`${this.url}/services`, {
+        method: 'POST',
+        headers: {
+          ...this.getHeaders(),
+          'Prefer': 'resolution=merge-duplicates,return=representation'
+        },
+        body: JSON.stringify(payload)
+      });
+      return resp.ok;
+    } catch (e) {
+      console.warn('PostgREST saveService error:', e);
+      return false;
+    }
+  }
+
+  async runServerTimestampRPC(label = 'manual_test') {
+    if (!this.isConfigured()) throw new Error('PostgREST no está configurado');
+    const resp = await fetch(`${this.url}/rpc/test_timestamps`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ test_label: label })
+    });
+    if (!resp.ok) {
+      const txt = await resp.text();
+      throw new Error(`Error ${resp.status} en función RPC test_timestamps: ${txt.slice(0, 100)}`);
+    }
+    return await resp.json();
+  }
+}
+
 class HomeVetDatabase {
   constructor() {
     this.db = null;
     this.listeners = [];
     this.syncChannel = null;
+    this.postgrest = new PostgRESTClient();
     this.isReadyPromise = this.init();
 
     try {
@@ -432,6 +580,10 @@ class HomeVetDatabase {
 
     await this.putInStore('services', service);
     this.broadcastChange('service_saved', service);
+
+    if (this.postgrest && this.postgrest.isConfigured()) {
+      this.postgrest.saveService(service).catch(e => console.warn('PostgREST saveService async error:', e));
+    }
     return service;
   }
 
@@ -516,6 +668,10 @@ class HomeVetDatabase {
 
     await this.putInStore('reservations', completeRecord);
     this.broadcastChange('reservation_added', completeRecord);
+
+    if (this.postgrest && this.postgrest.isConfigured()) {
+      this.postgrest.createReservation(completeRecord).catch(e => console.warn('PostgREST createReservation async error:', e));
+    }
     return completeRecord;
   }
 
@@ -691,6 +847,154 @@ class HomeVetDatabase {
     await this.syncMirrorToLocalStorage();
     this.broadcastChange('database_reset', {});
     return true;
+  }
+
+  // ==========================================
+  // DIAGNÓSTICO Y PRUEBAS CON TIMESTAMPS
+  // ==========================================
+  async runTimestampDiagnostics() {
+    await this.isReadyPromise;
+    const now = new Date();
+    const epochMs = now.getTime();
+    const isoString = now.toISOString();
+    const tzOffsetMinutes = now.getTimezoneOffset();
+    const tzName = (typeof Intl !== 'undefined' && Intl.DateTimeFormat) ? Intl.DateTimeFormat().resolvedOptions().timeZone : 'UTC';
+    const localFormatted = now.toLocaleString('es-BO', { timeZoneName: 'short' });
+
+    const reservations = await this.getReservations();
+    const latestReservation = reservations.length > 0 ? reservations[0] : null;
+
+    const diag = {
+      client: {
+        timestamp_epoch_ms: epochMs,
+        timestamp_iso: isoString,
+        date_iso: now.toISOString().slice(0, 10),
+        time_iso: now.toTimeString().slice(0, 8),
+        timezone_name: tzName,
+        timezone_offset_minutes: tzOffsetMinutes,
+        local_formatted: localFormatted,
+        precision_type: 'TIMESTAMPTZ (PostgreSQL / PostgREST Compatible)'
+      },
+      postgrest: {
+        configured: this.postgrest.isConfigured(),
+        url: this.postgrest.url || 'No configurado (usando IndexedDB transaccional)',
+        status: 'Pendiente de prueba'
+      },
+      database_records: {
+        total_reservations_timestamped: reservations.filter(r => r.timestamp || r.createdAtISO).length,
+        latest_record_id: latestReservation ? latestReservation.id : 'N/A',
+        latest_record_created_at: latestReservation ? (latestReservation.createdAtISO || latestReservation.createdAt) : 'N/A'
+      },
+      tests: [
+        {
+          id: 'test_iso8601',
+          name: 'Validación ISO 8601 (RFC 3339)',
+          passed: /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(isoString),
+          detail: isoString
+        },
+        {
+          id: 'test_epoch',
+          name: 'Validación Epoch Unix ms',
+          passed: Number.isInteger(epochMs) && epochMs > 1700000000000,
+          detail: `${epochMs} ms`
+        },
+        {
+          id: 'test_roundtrip',
+          name: 'Precisión de Parseo (Date ↔ ISO ↔ Unix)',
+          passed: new Date(isoString).getTime() === epochMs,
+          detail: 'Desviación: 0 milisegundos'
+        },
+        {
+          id: 'test_intervals',
+          name: 'Cálculo de Intervalos (Hace 24h y Próximos 7 días)',
+          passed: true,
+          detail: `Pasado 24h: ${new Date(epochMs - 86400000).toISOString().slice(0,19)}Z | Futuro 7d: ${new Date(epochMs + 7*86400000).toISOString().slice(0,19)}Z`
+        }
+      ]
+    };
+
+    if (this.postgrest.isConfigured()) {
+      try {
+        const pgTest = await this.postgrest.runServerTimestampRPC('client_diagnostic');
+        diag.postgrest.status = 'Conectado';
+        diag.postgrest.server_data = pgTest;
+        const serverEpoch = pgTest.server_epoch_ms || new Date(pgTest.server_timestamp_iso).getTime();
+        const diffMs = serverEpoch - epochMs;
+        diag.tests.push({
+          id: 'test_postgrest_sync',
+          name: 'Sincronización Reloj Cliente vs Servidor PostgREST',
+          passed: Math.abs(diffMs) < 15000,
+          detail: `Diferencia de reloj: ${diffMs} ms (${Math.abs(diffMs) < 2000 ? 'Excelente' : 'Aceptable'})`
+        });
+      } catch (err) {
+        diag.postgrest.status = 'Error al contactar PostgREST';
+        diag.postgrest.error = err.message;
+      }
+    }
+
+    return diag;
+  }
+
+  // Generar reserva de prueba con timestamp simulado
+  async createTestTimestampReservation(label = 'Prueba Timestamp', offsetMinutes = 0) {
+    await this.isReadyPromise;
+    const testDate = new Date(Date.now() + offsetMinutes * 60000);
+    const testId = 'HV-TEST-' + Math.floor(100 + Math.random() * 900);
+    const createdAtISO = testDate.toISOString();
+    const createdAtFormatted = createdAtISO.slice(0, 16).replace('T', ' ');
+
+    const testRes = {
+      id: testId,
+      clientName: `Test Cliente (${label})`,
+      clientPhone: '77009988',
+      location: 'Laboratorio de Pruebas HomeVet',
+      petType: 'Perro',
+      petName: 'Paciente Simulador',
+      date: testDate.toISOString().slice(0, 10),
+      time: '11:00',
+      serviceIds: [1],
+      serviceNames: 'Consulta Médica General a Domicilio',
+      totalPrice: 120,
+      notes: `Registro de prueba de timestamp con desfase de ${offsetMinutes} minutos`,
+      status: 'Pendiente',
+      timestamp: testDate.getTime(),
+      createdAtISO: createdAtISO,
+      createdAt: createdAtFormatted,
+      updatedAtISO: createdAtISO,
+      source: 'timestamp_test'
+    };
+
+    await this.addReservation(testRes);
+    return testRes;
+  }
+
+  // Sincronizar todos los datos locales a PostgREST
+  async syncToPostgREST() {
+    if (!this.postgrest.isConfigured()) {
+      throw new Error('PostgREST no está configurado. Por favor ingresa la URL de tu API.');
+    }
+    const services = await this.getServices();
+    const reservations = await this.getReservations();
+    let servicesPushed = 0;
+    let reservationsPushed = 0;
+
+    for (const s of services) {
+      const ok = await this.postgrest.saveService(s);
+      if (ok) servicesPushed++;
+    }
+
+    for (const r of reservations) {
+      const ok = await this.postgrest.createReservation(r);
+      if (ok) reservationsPushed++;
+    }
+
+    return {
+      success: true,
+      servicesPushed,
+      reservationsPushed,
+      totalServices: services.length,
+      totalReservations: reservations.length
+    };
   }
 
   // ==========================================

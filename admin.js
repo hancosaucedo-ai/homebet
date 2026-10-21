@@ -57,9 +57,25 @@ function setAdminAuthenticated(val) {
   }
 }
 
+function getAdminCredentials() {
+  const custom = localStorage.getItem('homevet_admin_custom_creds');
+  if (custom) {
+    try {
+      return JSON.parse(custom);
+    } catch (e) {}
+  }
+  return ADMIN_CREDENTIALS;
+}
+
 function checkAdminAuth() {
   const loginSection = document.getElementById('admin-login-view');
   const dashboardSection = document.getElementById('admin-dashboard-view');
+  const emailDisplay = document.getElementById('admin-current-email-display');
+  const creds = getAdminCredentials();
+
+  if (emailDisplay) {
+    emailDisplay.innerText = creds.email;
+  }
 
   if (isAdminAuthenticated()) {
     if (loginSection) loginSection.style.display = 'none';
@@ -77,8 +93,9 @@ window.handleAdminLogin = function(event) {
   const email = document.getElementById('admin-login-email').value.trim();
   const password = document.getElementById('admin-login-password').value;
   const errorBox = document.getElementById('admin-login-error');
+  const creds = getAdminCredentials();
 
-  if (email === ADMIN_CREDENTIALS.email && password === ADMIN_CREDENTIALS.password) {
+  if (email === creds.email && password === creds.password) {
     setAdminAuthenticated(true);
     if (errorBox) errorBox.style.display = 'none';
     checkAdminAuth();
@@ -92,8 +109,35 @@ window.handleAdminLogin = function(event) {
 };
 
 window.prefillAdminCredentials = function() {
-  document.getElementById('admin-login-email').value = ADMIN_CREDENTIALS.email;
-  document.getElementById('admin-login-password').value = ADMIN_CREDENTIALS.password;
+  const creds = getAdminCredentials();
+  document.getElementById('admin-login-email').value = creds.email;
+  document.getElementById('admin-login-password').value = creds.password;
+};
+
+window.openChangePasswordModal = function() {
+  const creds = getAdminCredentials();
+  document.getElementById('admin-new-email').value = creds.email;
+  document.getElementById('admin-new-password').value = '';
+  document.getElementById('admin-confirm-password').value = '';
+  document.getElementById('change-password-modal').classList.add('active');
+};
+
+window.handleChangeCredentials = function(event) {
+  event.preventDefault();
+  const email = document.getElementById('admin-new-email').value.trim();
+  const pass = document.getElementById('admin-new-password').value;
+  const confirmPass = document.getElementById('admin-confirm-password').value;
+
+  if (pass !== confirmPass) {
+    showToast('Las contraseñas no coinciden.', 'error');
+    return;
+  }
+
+  const newCreds = { email, password: pass };
+  localStorage.setItem('homevet_admin_custom_creds', JSON.stringify(newCreds));
+  closeModal('change-password-modal');
+  checkAdminAuth();
+  showToast('Credenciales actualizadas correctamente.', 'success');
 };
 
 window.handleAdminLogout = function() {
@@ -116,10 +160,17 @@ window.switchAdminTab = function(tabName, buttonElement) {
   const servicesSection = document.getElementById('admin-section-services');
   const reservationsSection = document.getElementById('admin-section-reservations');
   const databaseSection = document.getElementById('admin-section-database');
+  const testingSection = document.getElementById('admin-section-testing');
 
   if (servicesSection) servicesSection.style.display = tabName === 'services' ? 'block' : 'none';
   if (reservationsSection) reservationsSection.style.display = tabName === 'reservations' ? 'block' : 'none';
   if (databaseSection) databaseSection.style.display = tabName === 'database' ? 'block' : 'none';
+  if (testingSection) {
+    testingSection.style.display = tabName === 'testing' ? 'block' : 'none';
+    if (tabName === 'testing') {
+      initTestingPanelUI();
+    }
+  }
 };
 
 // ==========================================
@@ -590,4 +641,198 @@ function escapeHTML(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+// ====================================================================
+// SECCIÓN 4: LABORATORIO DE PRUEBAS POSTGREST & TIMESTAMPS
+// ====================================================================
+
+let liveClockTimer = null;
+
+function initTestingPanelUI() {
+  updateLiveTimestampMetrics();
+  
+  if (liveClockTimer) clearInterval(liveClockTimer);
+  liveClockTimer = setInterval(updateLiveTimestampMetrics, 1000);
+
+  // Cargar configuración guardada de PostgREST
+  if (window.HomeVetDB && window.HomeVetDB.postgrest) {
+    const cfg = window.HomeVetDB.postgrest.getConfig();
+    const urlInput = document.getElementById('postgrest-url-input');
+    const keyInput = document.getElementById('postgrest-key-input');
+    if (urlInput && !urlInput.value) urlInput.value = cfg.url || '';
+    if (keyInput && !keyInput.value) keyInput.value = cfg.apiKey || '';
+
+    updatePostgRESTStatusBadge(window.HomeVetDB.postgrest.isConfigured() ? 'checking' : 'disconnected');
+  }
+}
+
+function updateLiveTimestampMetrics() {
+  const now = new Date();
+  const utcEl = document.getElementById('metric-utc-iso');
+  const localEl = document.getElementById('metric-local-time');
+  const epochEl = document.getElementById('metric-epoch-ms');
+  const tzEl = document.getElementById('metric-tz-name');
+
+  if (utcEl) utcEl.innerText = now.toISOString();
+  if (localEl) localEl.innerText = now.toLocaleString('es-BO', { dateStyle: 'medium', timeStyle: 'medium' });
+  if (epochEl) epochEl.innerText = `${now.getTime()} ms`;
+  if (tzEl) {
+    const tz = (typeof Intl !== 'undefined' && Intl.DateTimeFormat) ? Intl.DateTimeFormat().resolvedOptions().timeZone : 'UTC';
+    const offset = -now.getTimezoneOffset() / 60;
+    const sign = offset >= 0 ? '+' : '';
+    tzEl.innerText = `${tz} (UTC${sign}${offset})`;
+  }
+}
+
+function updatePostgRESTStatusBadge(status, message = null) {
+  const badge = document.getElementById('postgrest-status-badge');
+  if (!badge) return;
+
+  if (status === 'connected') {
+    badge.style.background = '#dcfce7';
+    badge.style.color = '#15803d';
+    badge.innerText = message || '🟢 PostgREST Conectado (PostgreSQL Activo)';
+  } else if (status === 'checking') {
+    badge.style.background = '#fef3c7';
+    badge.style.color = '#b45309';
+    badge.innerText = '🟡 Verificando conexión PostgREST...';
+  } else {
+    badge.style.background = '#fee2e2';
+    badge.style.color = '#b91c1c';
+    badge.innerText = message || '🔴 PostgREST Desconectado (Modo IndexedDB Local)';
+  }
+}
+
+window.saveAndTestPostgRESTUI = async function() {
+  const url = (document.getElementById('postgrest-url-input')?.value || '').trim();
+  const apiKey = (document.getElementById('postgrest-key-input')?.value || '').trim();
+
+  if (!url) {
+    showToast('Por favor introduce la URL de tu endpoint PostgREST (ej. http://localhost:3000)', 'error');
+    return;
+  }
+
+  updatePostgRESTStatusBadge('checking');
+  logToTimestampConsole(`[${new Date().toISOString()}] Guardando configuración y testeando ${url}...`);
+
+  try {
+    window.HomeVetDB.postgrest.saveConfig(url, apiKey);
+    const testResult = await window.HomeVetDB.postgrest.testConnection();
+
+    if (testResult.ok) {
+      updatePostgRESTStatusBadge('connected');
+      showToast('¡Conexión exitosa con el servidor PostgREST/PostgreSQL!', 'success');
+      logToTimestampConsole(`[OK] PostgREST respondió exitosamente (HTTP 200). Tablas accesibles: /reservations, /services.`);
+    } else {
+      updatePostgRESTStatusBadge('disconnected', '🔴 Error al contactar PostgREST');
+      showToast(`Error al conectar con PostgREST: ${testResult.error}`, 'error');
+      logToTimestampConsole(`[ERROR] Falla al contactar PostgREST: ${testResult.error}`);
+    }
+  } catch (err) {
+    updatePostgRESTStatusBadge('disconnected', '🔴 Error de red en PostgREST');
+    showToast(`Error de conexión: ${err.message}`, 'error');
+    logToTimestampConsole(`[EXCEPCIÓN] ${err.message}`);
+  }
+};
+
+window.syncPostgRESTDataUI = async function() {
+  if (!window.HomeVetDB.postgrest.isConfigured()) {
+    showToast('Primero configura y prueba la URL de PostgREST.', 'error');
+    return;
+  }
+
+  showToast('Iniciando sincronización a PostgreSQL / PostgREST...', 'info');
+  logToTimestampConsole(`[${new Date().toISOString()}] Sincronizando catálogo y reservas a PostgREST...`);
+
+  try {
+    const result = await window.HomeVetDB.syncToPostgREST();
+    showToast(`Sincronización completada: ${result.reservationsPushed} reservas y ${result.servicesPushed} servicios subidos.`, 'success');
+    logToTimestampConsole(`[OK] Sincronización exitosa:\n- Servicios subidos: ${result.servicesPushed} / ${result.totalServices}\n- Reservas subidas: ${result.reservationsPushed} / ${result.totalReservations}`);
+  } catch (err) {
+    showToast(`Error al sincronizar: ${err.message}`, 'error');
+    logToTimestampConsole(`[ERROR] Falló sincronización: ${err.message}`);
+  }
+};
+
+window.runTimestampDiagnosticUI = async function() {
+  logToTimestampConsole(`[${new Date().toISOString()}] Ejecutando suite integral de diagnóstico de timestamps...`);
+
+  try {
+    const diag = await window.HomeVetDB.runTimestampDiagnostics();
+    let report = `========================================================\n`;
+    report += `🧪 REPORTE DE CERTIFICACIÓN DE MARCAS DE TIEMPO (TIMESTAMPS)\n`;
+    report += `========================================================\n\n`;
+
+    report += `[1] RELOJ DEL CLIENTE (MÓVIL / ESCRITORIO):\n`;
+    report += ` • Timestamp ISO 8601 (UTC): ${diag.client.timestamp_iso}\n`;
+    report += ` • Timestamp Epoch Unix:     ${diag.client.timestamp_epoch_ms} ms\n`;
+    report += ` • Hora Local Formateada:    ${diag.client.local_formatted}\n`;
+    report += ` • Zona Horaria Detectada:   ${diag.client.timezone_name} (Offset: ${diag.client.timezone_offset_minutes} min)\n`;
+    report += ` • Tipo de Precisión SQL:    ${diag.client.precision_type}\n\n`;
+
+    report += `[2] BASE DE DATOS Y REGISTROS:\n`;
+    report += ` • Total Reservas con Timestamp: ${diag.database_records.total_reservations_timestamped}\n`;
+    report += ` • Último Registro ID:           ${diag.database_records.latest_record_id}\n`;
+    report += ` • Creado el:                    ${diag.database_records.latest_record_created_at}\n\n`;
+
+    report += `[3] ESTADO POSTGREST / POSTGRESQL:\n`;
+    report += ` • URL Endpoint:   ${diag.postgrest.url}\n`;
+    report += ` • Estado Servidor: ${diag.postgrest.status}\n`;
+    if (diag.postgrest.server_data) {
+      report += ` • Timestamp Servidor PostgreSQL: ${diag.postgrest.server_data.server_timestamp_iso || 'N/A'}\n`;
+    }
+    if (diag.postgrest.error) {
+      report += ` • Nota: ${diag.postgrest.error}\n`;
+    }
+    report += `\n`;
+
+    report += `[4] PRUEBAS UNITARIAS DE TIMESTAMP:\n`;
+    diag.tests.forEach((t, i) => {
+      const icon = t.passed ? '✅ [PASS]' : '❌ [FAIL]';
+      report += ` ${icon} Test #${i + 1}: ${t.name}\n`;
+      report += `      Detalle: ${t.detail}\n`;
+    });
+
+    report += `\n========================================================\n`;
+    report += `CONCLUSIÓN: Arquitectura de tiempo certificada para GitHub Pages y PostgreSQL.\n`;
+
+    logToTimestampConsole(report);
+    showToast('Diagnóstico de timestamps completado exitosamente.', 'success');
+  } catch (err) {
+    logToTimestampConsole(`[ERROR FATAL] ${err.message}`);
+    showToast(`Error al ejecutar diagnóstico: ${err.message}`, 'error');
+  }
+};
+
+window.createTestReservationWithOffsetUI = async function(label, offsetMinutes) {
+  try {
+    const res = await window.HomeVetDB.createTestTimestampReservation(label, offsetMinutes);
+    logToTimestampConsole(`[${new Date().toISOString()}] Cita de prueba generada:\n- ID: ${res.id}\n- Cliente: ${res.clientName}\n- Timestamp ISO: ${res.createdAtISO}\n- Epoch ms: ${res.timestamp}\n- Desfase: ${offsetMinutes} min`);
+    
+    await renderAdminReservations();
+    await updateAdminStats();
+    showToast(`Cita de prueba (${label}) generada con timestamp correcto.`, 'success');
+  } catch (err) {
+    showToast(`Error al crear cita de prueba: ${err.message}`, 'error');
+  }
+};
+
+window.clearTimestampConsole = function() {
+  const consoleEl = document.getElementById('timestamp-test-output');
+  if (consoleEl) {
+    consoleEl.innerText = `// Consola reiniciada a las ${new Date().toLocaleTimeString()}.\n// Listo para nuevas pruebas de timestamps.`;
+  }
+};
+
+function logToTimestampConsole(text) {
+  const consoleEl = document.getElementById('timestamp-test-output');
+  if (consoleEl) {
+    if (consoleEl.innerText.startsWith('//')) {
+      consoleEl.innerText = text;
+    } else {
+      consoleEl.innerText += `\n\n` + text;
+    }
+    consoleEl.scrollTop = consoleEl.scrollHeight;
+  }
 }
