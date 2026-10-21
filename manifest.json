@@ -1,0 +1,43 @@
+{
+  "name": "HomeVet - Servicios Veterinarios a Domicilio",
+  "short_name": "HomeVet",
+  "description": "Atención médica veterinaria a domicilio para caninos y felinos. Reserva tu cita online y contáctanos vía WhatsApp.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#093740",
+  "theme_color": "#0e697d",
+  "orientation": "portrait-primary",
+  "categories": ["medical", "lifestyle", "utilities"],
+  "lang": "es",
+  "icons": [
+    {
+      "src": "assets/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Reservar Cita",
+      "short_name": "Reservar",
+      "description": "Agendar consulta veterinaria a domicilio",
+      "url": "./index.html#reservar",
+      "icons": [{ "src": "assets/logo.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Panel Admin",
+      "short_name": "Admin",
+      "description": "Panel de administración y gestión",
+      "url": "./admin.html",
+      "icons": [{ "src": "assets/logo.png", "sizes": "192x192" }]
+    }
+  ]
+}
